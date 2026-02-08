@@ -1,116 +1,109 @@
-import { Hono } from "hono";
-import { upgradeWebSocket } from "hono/cloudflare-workers";
-import { logger } from "hono/logger";
-import type { WSContext } from "hono/ws"; // 타입 불러오기
+import { Hono } from 'hono'
 
-// --- 1. Durable Object 클래스 정의 (실시간 통신 중앙 통제) ---
-export class ChatRoom {
-  state: DurableObjectState;
-  sessions: Set<WebSocket> = new Set();
+// --- 1. 대기실 (Lobby) DO: 유저들을 짝지어줌 ---
+export class Lobby {
+  state: DurableObjectState
+  waitingSocket: WebSocket | null = null
 
   constructor(state: DurableObjectState) {
-    this.state = state;
+    this.state = state
   }
 
-  // 웹소켓 연결 요청 처리
   async fetch(request: Request) {
-    const [client, server] = Object.values(new WebSocketPair());
+    const [client, server] = Object.values(new WebSocketPair())
+    server.accept()
 
-    // 서버 측 소켓 수락 및 세션 관리
-    server.accept();
-    this.sessions.add(server);
-
-    // 메시지 수신 이벤트
-    server.addEventListener("message", (msg) => {
-      try {
-        const data = JSON.parse(msg.data as string);
-
-        // 서버에서 시간 정보를 추가하여 재조립
-        const responseData = JSON.stringify({
-          nickname: data.nickname || "익명",
-          text: data.text || "",
-          time: new Date().toLocaleTimeString("ko-KR", {
-            hour: "numeric",
-            minute: "numeric",
-            hour12: true,
-          }),
-        });
-
-        this.broadcast(responseData);
-      } catch (e) {
-        // 혹시 모를 에러 방지 (시스템 메시지 등)
-        this.broadcast(msg.data);
+    server.addEventListener('message', (msg) => {
+      if (msg.data === 'find_match') {
+        this.handleMatch(server)
       }
-    });
+    })
 
-    // 연결 종료 이벤트
-    server.addEventListener("close", () => {
-      this.sessions.delete(server);
-      this.broadcastUserCount();
-    });
-
-    server.addEventListener("error", () => {
-      this.sessions.delete(server);
-    });
-
-    // 신규 접속 시 인원수 업데이트
-    this.broadcastUserCount();
-
-    return new Response(null, { status: 101, webSocket: client });
+    return new Response(null, { status: 101, webSocket: client })
   }
 
-  // 모든 세션에 메시지 전송 함수
-  broadcast(message: any) {
-    for (const session of this.sessions) {
-      try {
-        session.send(message);
-      } catch (e) {
-        this.sessions.delete(session);
-      }
+  handleMatch(ws: WebSocket) {
+    if (this.waitingSocket && this.waitingSocket !== ws) {
+      // 짝이 맞음! 새로운 방 ID 생성
+      const roomId = crypto.randomUUID()
+      const matchData = JSON.stringify({ type: 'matched', roomId })
+      
+      this.waitingSocket.send(matchData)
+      ws.send(matchData)
+      
+      this.waitingSocket = null // 대기실 비우기
+    } else {
+      // 첫 번째 대기자 등록
+      this.waitingSocket = ws
+      ws.send(JSON.stringify({ type: 'waiting', message: '상대방을 찾는 중...' }))
     }
-  }
-
-  // 접속자 수 알림 함수
-  broadcastUserCount() {
-    const data = JSON.stringify({
-      nickname: "userNumber",
-      text: `${this.sessions.size}`,
-      time: new Date().toLocaleTimeString("ko-KR", {
-        hour: "numeric",
-        minute: "numeric",
-      }),
-    });
-    this.broadcast(data);
   }
 }
 
-// --- 2. Hono 앱 설정 및 타입 정의 ---
+// --- 2. 실제 채팅방 (ChatRoom) DO: 1:1 대화 ---
+export class ChatRoom {
+  state: DurableObjectState
+  sessions: Set<WebSocket> = new Set()
+
+  constructor(state: DurableObjectState) {
+    this.state = state
+  }
+
+  async fetch(request: Request) {
+    const [client, server] = Object.values(new WebSocketPair())
+    server.accept()
+    this.sessions.add(server)
+
+    server.addEventListener('message', (msg) => {
+      const data = JSON.parse(msg.data as string)
+      const response = JSON.stringify({
+        ...data,
+        time: new Date().toLocaleTimeString('ko-KR', { hour: 'numeric', minute: 'numeric', hour12: true })
+      })
+      
+      // 방에 있는 상대방에게만 전송
+      for (const s of this.sessions) {
+        s.send(response)
+      }
+    })
+
+    server.addEventListener('close', () => {
+      this.sessions.delete(server)
+      // 상대방에게 종료 알림
+      for (const s of this.sessions) {
+        s.send(JSON.stringify({ type: 'disconnected', message: '상대방이 나갔습니다.' }))
+      }
+    })
+
+    return new Response(null, { status: 101, webSocket: client })
+  }
+}
+
+// --- 3. Hono 설정 ---
 type Bindings = {
-  ASSETS: Fetcher;
-  CHAT_ROOM: DurableObjectNamespace;
-};
+  ASSETS: Fetcher
+  LOBBY: DurableObjectNamespace
+  CHAT_ROOM: DurableObjectNamespace
+}
 
-const app = new Hono<{ Bindings: Bindings }>();
-app.use("*", logger());
-// 정적 파일 서빙 (HTML, JS, CSS)
-app.get("/", (c) =>
-  c.env.ASSETS.fetch(new Request(new URL("/main.html", c.req.url))),
-);
-app.get("/chat", (c) =>
-  c.env.ASSETS.fetch(new Request(new URL("/chat.html", c.req.url))),
-);
-app.get("/js/*", (c) => c.env.ASSETS.fetch(c.req.raw));
-app.get("/*.css", (c) => c.env.ASSETS.fetch(c.req.raw));
-app.get("/*.gif", (c) => c.env.ASSETS.fetch(c.req.raw));
+const app = new Hono<{ Bindings: Bindings }>()
 
-// WebSocket 연결 경로
-app.get("/chat-ws", async (c) => {
-  // 'global-room'이라는 고유 ID로 단일 Durable Object 인스턴스 생성/접속
-  const id = c.env.CHAT_ROOM.idFromName("global-room");
-  const obj = c.env.CHAT_ROOM.get(id);
+// 정적 파일 서빙
+app.get('/', (c) => c.env.ASSETS.fetch(new Request(new URL('/main.html', c.req.url))))
+app.get('/chat', (c) => c.env.ASSETS.fetch(new Request(new URL('/chat.html', c.req.url))))
+app.get('/js/*', (c) => c.env.ASSETS.fetch(c.req.raw))
+app.get('/*.css', (c) => c.env.ASSETS.fetch(c.req.raw))
 
-  // Durable Object로 요청 전달
-  return obj.fetch(c.req.raw);
-});
+// 로비 접속 (매칭 대기)
+app.get('/lobby-ws', async (c) => {
+  const id = c.env.LOBBY.idFromName('global-lobby')
+  return c.env.LOBBY.get(id).fetch(c.req.raw)
+})
 
-export default app;
+// 실제 채팅방 접속
+app.get('/chat-ws/:roomId', async (c) => {
+  const id = c.env.CHAT_ROOM.idFromName(c.req.param('roomId'))
+  return c.env.CHAT_ROOM.get(id).fetch(c.req.raw)
+})
+
+export default app

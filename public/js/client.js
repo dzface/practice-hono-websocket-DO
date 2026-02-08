@@ -1,71 +1,122 @@
-// 현재 접속 환경에 맞춰 WebSocket 프로토콜 및 호스트 자동 설정
 const protocol = window.location.protocol === "https:" ? "wss" : "ws";
 const host = window.location.host;
-const ws = new WebSocket(`${protocol}://${host}/chat-ws`);
+
+let ws = null; 
+let isMatched = false; // 현재 매칭 상태 확인용
 
 const nicknameInput = document.querySelector(".nickname-input");
 const textInput = document.querySelector(".text-input");
-const sendButton = document.querySelector(".send-button");
+const sendButton = document.querySelector(".send-button"); // 전송/재연결 버튼
 const chatUl = document.querySelector(".chat-ul");
-const userNumber = document.querySelector(".user-number");
-const chatForm = document.querySelector("form");
 
-// 서버로부터 메시지 수신
-ws.onmessage = (event) => {
-  const receivedData = JSON.parse(event.data);
-  
-  // 접속자 수 업데이트
-  if (receivedData.nickname === "userNumber") {
-    if (userNumber) userNumber.textContent = `접속자 : ${receivedData.text} 명`;
-    return;
-  }
+// 버튼 상태를 변경하는 함수
+function setButtonMode(mode) {
+    if (mode === "connect") {
+        isMatched = false;
+        sendButton.textContent = "재연결";
+        sendButton.style.backgroundColor = "#ff4757"; // 눈에 띄는 색상으로 변경 (선택사항)
+        textInput.disabled = true; // 대화 전엔 입력창 막기
+        textInput.placeholder = "매칭을 시작해 주세요.";
+    } else {
+        isMatched = true;
+        sendButton.textContent = "전송";
+        sendButton.style.backgroundColor = ""; // 원래 색상으로
+        textInput.disabled = false;
+        textInput.placeholder = "메시지를 입력하세요...";
+        textInput.focus();
+    }
+}
 
-  // 채팅 메시지 추가
-  const li = document.createElement("li");
-  li.className = "chat-li";
-  
-  const nicknameSpan = document.createElement("span");
-  nicknameSpan.className = "chat-nickname";
-  nicknameSpan.textContent = `${receivedData.nickname} : `;
-  
-  const textSpan = document.createElement("span");
-  textSpan.className = "chat-text";
-  textSpan.textContent = receivedData.text;
+function addSystemMsg(msg) {
+    const li = document.createElement("li");
+    li.style.textAlign = "center";
+    li.style.color = "gray";
+    li.style.margin = "10px 0";
+    li.textContent = `[시스템] ${msg}`;
+    chatUl.appendChild(li);
+    chatUl.scrollTo(0, chatUl.scrollHeight);
+}
 
-  const timeSpan = document.createElement("span");
-  timeSpan.style.fontSize = "10px";
-  timeSpan.style.color = "#888";
-  timeSpan.textContent = ` (${receivedData.time})`;
+// 1단계: 대기실 연결
+function initMatching() {
+    setButtonMode("chat"); // 일단 버튼은 '전송' 상태 (상대 찾는 중 메시지용)
+    sendButton.disabled = true; // 매칭 중엔 클릭 방지
+    
+    ws = new WebSocket(`${protocol}://${host}/lobby-ws`);
 
-  li.appendChild(nicknameSpan);
-  li.appendChild(textSpan);
-  li.appendChild(timeSpan);
-  chatUl.appendChild(li);
+    ws.onopen = () => {
+        ws.send("find_match");
+        addSystemMsg("상대방을 찾는 중...");
+    };
 
-  // 스크롤 하단 이동
-  chatUl.scrollTo(0, chatUl.scrollHeight);
+    ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.type === "matched") {
+            ws.close();
+            connectToChat(data.roomId);
+        }
+    };
+}
+
+// 2단계: 실제 채팅방 연결
+function connectToChat(roomId) {
+    ws = new WebSocket(`${protocol}://${host}/chat-ws/${roomId}`);
+
+    ws.onopen = () => {
+        sendButton.disabled = false; // 매칭 완료 시 버튼 활성화
+        setButtonMode("chat");
+        addSystemMsg("상대방과 연결되었습니다!");
+    };
+
+    ws.onmessage = (event) => {
+        const receivedData = JSON.parse(event.data);
+
+        if (receivedData.type === "disconnected") {
+            addSystemMsg("상대방이 나갔습니다. 재연결 버튼을 눌러주세요.");
+            ws.close();
+            setButtonMode("connect"); // 버튼을 [재연결]로 변경
+            return;
+        }
+
+        // 일반 메시지 출력
+        const li = document.createElement("li");
+        li.className = "chat-li";
+        li.innerHTML = `<span class="chat-nickname">${receivedData.nickname} : </span>
+                        <span class="chat-text">${receivedData.text}</span>
+                        <span style="font-size:10px; color:#888;"> (${receivedData.time})</span>`;
+        chatUl.appendChild(li);
+        chatUl.scrollTo(0, chatUl.scrollHeight);
+    };
+}
+
+// 버튼 클릭 이벤트 통합 처리
+const handleButtonClick = (e) => {
+    if (e) e.preventDefault();
+
+    if (!isMatched) {
+        // [재연결] 모드일 때 클릭 시
+        chatUl.innerHTML = ""; // 채팅 내역 비우기
+        initMatching();
+    } else {
+        // [전송] 모드일 때 클릭 시
+        if (!textInput.value.trim() || ws.readyState !== WebSocket.OPEN) return;
+
+        const chat = {
+            nickname: nicknameInput.value || "익명",
+            text: textInput.value
+        };
+
+        ws.send(JSON.stringify(chat));
+        textInput.value = "";
+        textInput.focus();
+    }
 };
 
-// 메시지 전송 함수
-const sendMessage = (e) => {
-  if (e) e.preventDefault();
-  if (!textInput.value.trim()) return;
-
-  const chat = {
-    nickname: nicknameInput.value ? nicknameInput.value : "익명",
-    text: textInput.value
-  };
-
-  ws.send(JSON.stringify(chat));
-  textInput.value = "";
-  textInput.focus();
-};
-
-sendButton.addEventListener("click", sendMessage);
+sendButton.addEventListener("click", handleButtonClick);
 
 textInput.addEventListener("keypress", (e) => {
-  if (e.key === "Enter") sendMessage(e);
+    if (e.key === "Enter" && isMatched) handleButtonClick(e);
 });
 
-ws.onopen = () => console.log("Connected to Durable Object Server");
-ws.onclose = () => console.log("Connection closed");
+// 페이지 접속 시 최초 1회 매칭 시작
+initMatching();
