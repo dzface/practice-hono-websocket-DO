@@ -1,0 +1,242 @@
+:root {
+  --color-win98-white: #ffffff;
+  --color-win98-light: #dfdfdf;
+  --color-win98-menu-gray: #c0c0c0;
+  --color-win98-dark: #808080;
+  --color-win98-black: #000000;
+
+  --color-win98-blue: #193cb8;
+  --color-win98-teal: #008b8b;
+  --color-win98-silver: #c0c0c0;
+
+  --color-win98-button-face: #c0c0c0;
+  --color-win98-button-highlight: #ffffff;
+  --color-win98-button-shadow: #808080;
+  --color-win98-button-dark-shadow: #404040;
+
+  --color-win98-disabled-text: #808080;
+  --color-win98-info-bg: #ffffe1;
+  --color-win98-info-text: #000000;
+}
+
+
+*{
+  margin: 0;
+  padding: 0;
+}
+
+
+.container{
+  width: 100dvw;
+  height: 100dvh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #008b8b;
+}
+.main-container{
+  width: 100dvw;
+  height: 100dvh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgb(5, 3, 3);
+}
+.main-box{
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: black;
+}
+.main-a{
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  border: none;
+  font-family:'DNFForgedBlade';font-style:normal;font-weight:500;
+  font-size: 5vw;
+  white-space:nowrap;
+  text-decoration: none;
+  color: white;
+  background-color: transparent;
+  p{
+    font-size: 5vw;
+  }
+  img{
+    width: 20vw;
+    height: 20vw;
+    object-fit: cover;
+  }
+  @media(max-width: 767px){
+    p{
+      font-size: 12vw;
+      z-index: 10;
+    }
+    img{
+      width: 40vw;
+      height: 40vw;
+      object-fit: cover;
+      margin: -10vw;
+    }
+  }
+}
+.chat-container{
+  width: 50dvw;
+  height: 70dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  font-family: 'NeoDunggeunmoPro-Regular';
+  font-size: 2vw;
+  
+  border: 5px outset gray;
+  background-color: grey;
+  @media(max-width: 767px){
+    width: 100dvw;
+    height: 99dvh;
+  }
+  .nickname-box{
+    height: 5vh;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: white;
+    background: linear-gradient(90deg, rgba(6,0,116,1) 0%, rgba(14,14,172,1) 30%, rgba(0,212,255,1) 100%);
+    white-space:nowrap;
+    padding: 0 0 0 1dvw;
+
+    @media(max-width: 767px){
+      font-size: 5.5vw;
+    }
+    .x-button{
+      width: 4vh;
+      height: 4vh;
+      font-size: 3vh;
+      text-decoration: none;
+      border: .3rem outset #999;
+      background-color: #aaa;
+      float: right;
+      @media(max-width: 767px){
+        width: 6vw;
+        height: 6vw;
+        font-size: 4vw;
+      }
+    }
+
+  }
+  .nickname-input{
+    width: 30dvw;
+    height: 4.5vh;
+    font-size: 2vw;
+    @media(max-width: 767px){
+      width: 60vw;
+      font-size: 6vw;
+    }
+  }
+  .chat-box{
+    height: 100%;
+    @media(max-width: 767px){
+      height: 100%;
+    }
+    .user-number{
+      font-size: 2vw;
+      margin-left: 1vw;
+      @media(max-width: 767px){
+        font-size: 5vw;
+      }
+    }
+    .chat-ul{
+      height: 100%;
+      background-color: white;
+      overflow-y: scroll;
+      @media(max-width: 767px){
+        height: 83dvh;
+      }
+    }
+    .chat-li{
+      list-style: none;
+      .chat-nickname {
+        margin: 1dvh 1dvw;
+      }
+      @media(max-width: 767px){
+        font-size: 6.5vw;
+        margin: 0 2dvw;
+      }
+    }
+  }
+  .text-box{
+    height: 8dvh;
+    display: flex;
+    align-items: center;
+
+    @media(max-width: 767px){
+      height: 8.5dvh;
+    }
+    form{
+      display: flex;
+      align-content: center;
+      height: 100%;
+      width: 100%;
+    }
+    .text-input{
+      width: 100%;
+      height: 90%;
+      font-size: 2vw;
+      @media(max-width: 767px){
+        font-size: 5vw;
+        width: 100%;
+        height: 6vh;
+      }
+    }
+    .send-button{
+      width: 8dvw;
+      height: 93%;
+      font-size: 1.5vw;
+      text-decoration: none;
+      border: .3rem outset #999;
+      background-color: #aaa;
+      white-space:nowrap;
+      @media(max-width: 767px){
+        width: 18dvw;
+        height: 6dvh;
+        font-size: 5vw;
+      }
+    }
+  }
+}
+
+/* 네오둥근모 */
+@font-face {
+  font-family: 'NeoDunggeunmoPro-Regular';
+  src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2302@1.0/NeoDunggeunmoPro-Regular.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+}
+/* //학교안심 리코더 체  */
+@font-face {
+  font-family: 'TTHakgyoansimRikodeoR';
+  src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2402_keris@1.0/TTHakgyoansimRikodeoR.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+}
+/* //넥슨 워헤이븐 체 */
+@font-face {
+  font-family: 'WarhavenB';
+  src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2312-1@1.1/WarhavenB.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+}
+/* // 던파 연단된 칼날 체  */
+@font-face{
+font-family:'DNFForgedBlade';font-style:normal;font-weight:300;
+src:url('//cdn.df.nexon.com/img/common/font/DNFForgedBlade-Light.otf')format('opentype')}
+
+@font-face{
+font-family:'DNFForgedBlade';font-style:normal;font-weight:500;
+src:url('//cdn.df.nexon.com/img/common/font/DNFForgedBlade-Medium.otf')format('opentype')}
+
+@font-face{
+font-family:'DNFForgedBlade';font-style:normal;font-weight:700;
+src:url('//cdn.df.nexon.com/img/common/font/DNFForgedBlade-Bold.otf')format('opentype')}
