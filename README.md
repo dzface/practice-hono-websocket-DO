@@ -1,21 +1,9 @@
 ```txt
-npm install
-npm run dev
-```
+1대1 매칭 채팅사이트
 
-```txt
-npm run deploy
-```
-
-[For generating/synchronizing types based on your Worker configuration run](https://developers.cloudflare.com/workers/wrangler/commands/#types):
-
-```txt
-npm run cf-typegen
-```
-
-Pass the `CloudflareBindings` as generics when instantiation `Hono`:
-
-```ts
-// src/index.ts
-const app = new Hono<{ Bindings: CloudflareBindings }>()
+구현기능
+- 이용자 대기 기능
+- 이용자 매칭 기능
+- 닉네임 변경기능
+- 연결 종료 후 재매칭 기능
 ```
