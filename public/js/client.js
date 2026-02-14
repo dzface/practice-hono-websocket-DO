@@ -10,7 +10,9 @@ const nicknameInput = document.querySelector(".nickname-input");
 const textInput = document.querySelector(".text-input");
 const sendButton = document.querySelector(".send-button"); // 전송/재연결 버튼
 const chatUl = document.querySelector(".chat-ul");
-
+//로딩이미지 관리
+const userStatus = document.querySelector(".user-status");
+let loadingImg = null;
 // 버튼 상태를 변경하는 함수
 function setButtonMode(mode) {
   if (mode === "connect") {
@@ -39,6 +41,24 @@ function addSystemMsg(msg) {
   chatUl.scrollTo(0, chatUl.scrollHeight);
 }
 
+function addLoadingImg() {
+  if (loadingImg) return;
+  loadingImg = document.createElement("img");
+  loadingImg.src = "loding.gif";
+  loadingImg.style.marginLeft = "5px";
+  loadingImg.style.display = "inline";
+  loadingImg.style.width = "2vw";  // 너비
+  loadingImg.style.height = "auto"; // 높이 (선택 사항, 비율 맞추려면 auto)
+  userStatus.appendChild(loadingImg);
+}
+function hiddenLoadingImg() {
+  if (loadingImg) {
+    loadingImg.style.display = "none";
+    connectTag = document.createElement("p");
+    connectTag.textContent = "🌐";
+    userStatus.appendChild(connectTag);
+  }
+}
 // 1단계: 대기실 연결
 function initMatching() {
   setButtonMode("chat"); // 일단 버튼은 '전송' 상태 (상대 찾는 중 메시지용)
@@ -49,6 +69,7 @@ function initMatching() {
   ws.onopen = () => {
     ws.send("find_match");
     addSystemMsg("상대방을 찾는 중...");
+    addLoadingImg()
   };
 
   ws.onmessage = (event) => {
@@ -68,6 +89,7 @@ function connectToChat(roomId) {
     sendButton.disabled = false; // 매칭 완료 시 버튼 활성화
     setButtonMode("chat");
     addSystemMsg("상대방과 연결되었습니다!");
+    hiddenLoadingImg();
   };
 
   ws.onmessage = (event) => {

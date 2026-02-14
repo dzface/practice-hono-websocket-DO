@@ -154,7 +154,9 @@
     @media (max-width: 767px) {
       height: 100%;
     }
-    .user-number {
+    .user-status {
+      display: flex;
+      align-items: center;
       font-size: 2vw;
       background-color: #808080;
       @media (max-width: 767px) {
