@@ -27,7 +27,7 @@
 
 .container {
   width: 100dvw;
-  height: 100dvh;
+  height: 100svh;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -35,11 +35,12 @@
 }
 .main-container {
   width: 100dvw;
-  height: 100dvh;
+  height: 100svh;
   display: flex;
   justify-content: center;
   align-items: center;
   background-color: rgb(5, 3, 3);
+  font-size: 3rem;
 }
 .main-box {
   width: 100%;
@@ -85,7 +86,7 @@
 }
 .chat-container {
   width: 50dvw;
-  height: 70dvh;
+  height: 70svh;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
@@ -97,7 +98,7 @@
   background-color: grey;
   @media (max-width: 767px) {
     width: 100dvw;
-    height: 99dvh;
+    height: 100svh;
     border: none; /* 모바일은 베젤 없이 꽉 차게 */
   }
   .nickname-box {
@@ -124,15 +125,16 @@
       align-items: center;
       width: 5vh;
       height: 5vh;
-      font-size: 1.5vw;
+      font-size: clamp(4px, 10vw, 90%);
       text-decoration: none;
       border: 0.2rem outset #999;
       background-color: #aaa;
       float: right;
+      margin-right: .2svw;
       @media (max-width: 767px) {
         width: 7vw;
         height: 7vw;
-        font-size: 4vw;
+        font-size: 2rem;
       }
     }
   }
@@ -186,18 +188,22 @@
     }
   }
   .text-box {
-    height: 8dvh;
+    height: 5vw;
+    min-height: 5vw;
     display: flex;
     align-items: center;
 
     @media (max-width: 767px) {
-      height: 8.5dvh;
+      height: auto;
     }
     form {
       display: flex;
       align-content: center;
       height: 100%;
       width: 100%;
+      @media (max-width: 767px) {
+        height: 5dvh;
+      }
     }
     .text-input {
       /* 모바일에서 인풋 박스가 밖으로 나가는 것 방지 */
