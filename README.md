@@ -7,3 +7,7 @@
 - 닉네임 변경기능
 - 연결 종료 후 재매칭 기능
 ```
+
+cloudflare 호스팅
+hono 서버리스 백엔드사용
+DO(Durable Object) 데이터베이스로 사용
